@@ -6,6 +6,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.util.ArrayList;
 import java.util.Random;
 
 public class Game extends JPanel implements ActionListener
@@ -16,8 +17,14 @@ public class Game extends JPanel implements ActionListener
     int DOT_AMOUNT = 2500;
     int DELAY = 500;
 
-    int x[] = new int[DOT_AMOUNT];
-    int y[] = new int[DOT_AMOUNT];
+    int head_x = WIDTH/(DOT * 2);
+    int head_y = WIDTH/(DOT * 2);
+
+    ArrayList<Integer> x = new ArrayList<>();
+    ArrayList<Integer> y = new ArrayList<>();
+
+    int x_limit = WIDTH/DOT;
+    int y_limit = WIDTH/DOT;
 
     boolean IS_ALIVE = true;
     boolean left = false;
@@ -55,15 +62,43 @@ public class Game extends JPanel implements ActionListener
 
     public void tick()
     {
-        while(IS_ALIVE)
+        if(IS_ALIVE)
         {
+            updateSnakeHead();
+            if(checkBounds() && !checkBodyCollision())
+            {
+                if(checkFood())
+                {
+                    x.add(x.get(x.size() - 1));
+                    y.add(y.get(y.size() - 1));
+                    food_eaten++;
+                    updateSnakeBody();
+                    updateFood();
+                }
+                else
+                {
+                    updateSnakeBody();
+                }
+            }
+            else
+            {
+                x.clear();
+                y.clear();
+                food_eaten = 0;
 
+                head_x = WIDTH/(DOT * 2);
+                head_y = WIDTH/(DOT * 2);
+                left = false;
+                right = true;
+                up = false;
+                down = false;
+            }
         }
     }
 
-    public boolean checkBounds(int x, int y)
+    public boolean checkBounds()
     {
-        if((x > 0) && (x < WIDTH) && (y > 0) && (y < HEIGHT))
+        if((head_x > -1) && (head_x < (x_limit-1)) && (head_y > -1) && (head_y < (y_limit - 1)))
         {
             return true;
         }
@@ -73,9 +108,9 @@ public class Game extends JPanel implements ActionListener
         }
     }
 
-    public boolean checkFood(int x, int y)
+    public boolean checkFood()
     {
-        if((x == food_x) && (y == food_y))
+        if((head_x == food_x) && (head_y == food_y))
         {
             return true;
         }
@@ -87,10 +122,85 @@ public class Game extends JPanel implements ActionListener
 
     public void updateFood()
     {
-        food_x = r.nextInt(WIDTH);
-        food_y = r.nextInt(HEIGHT);
-        food_eaten++;
-        DELAY = DELAY - 5;
+        int tries = 5;
+        boolean ok = true;
+        int xF = 0;
+        int yF = 0;
+        for(int i = 0; i < tries; i++)
+        {
+            xF = r.nextInt(x_limit);
+            yF = r.nextInt(y_limit);
+            if((food_x == xF) && (food_y == yF))
+            {
+                ok = false;
+            }
+            else
+            {
+                for(int j = 0; j < x.size(); j++)
+                {
+                    if((food_x == x.get(j)) && (food_y == y.get(j)))
+                    {
+                        ok = false;
+                    }
+                }
+            }
+            if(ok)
+            {
+                break;
+            }
+        }
+        food_x = xF;
+        food_y = yF;
+    }
+
+    public boolean checkBodyCollision()
+    {
+        boolean isCollision = false;
+        for(int i = 0; i < x.size(); i++)
+        {
+            if(((head_x == x.get(i)) && (head_y == y.get(i))))
+            {
+                isCollision = true;
+                break;
+            }
+        }
+
+        return isCollision;
+    }
+
+    public void updateSnakeBody()
+    {
+        x.set(0, head_x);
+        y.set(0, head_y);
+
+        for(int i = 1; i < x.size(); i++)
+        {
+            x.set(i, x.get(i - 1));
+            y.set(i, y.get(i - 1));
+        }
+    }
+
+    public void updateSnakeHead()
+    {
+        if(checkBounds())
+        {
+            if(left)
+            {
+                head_x--;
+            }
+            if(right)
+            {
+                head_x++;
+            }
+            if(up)
+            {
+                head_y--;
+            }
+            if(down)
+            {
+                head_y++;
+            }
+        }
     }
 
     @Override
